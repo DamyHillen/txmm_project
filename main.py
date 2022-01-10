@@ -17,6 +17,21 @@ logger.addHandler(file_handler)
 logger.propagate = False
 
 
+def main():
+    links = {
+        "List of Renaissance composers": plain_list_parser,
+        "List of postmodernist composers": plain_list_parser,
+        "List of Baroque composers": plain_list_parser,
+        "List of Classical era composers": plain_list_parser,
+        "List of modernist composers": plain_list_parser,
+        "List of medieval composers": table_parser,
+        "List of 20th-century classical composers": table_parser,
+        "List of 21st-century classical composers": table_parser
+    }
+
+    era_pages = get_parsed_data(links)
+
+
 def plain_list_parser(era_pages: dict, link: str) -> list:
     ul_items = era_pages[link]['bsoup'].find_all('ul')
 
@@ -55,32 +70,26 @@ def table_parser(era_pages: dict, link: str) -> list:
     return composers
 
 
-links = {
-    "List of Renaissance composers": plain_list_parser,
-    "List of postmodernist composers": plain_list_parser,
-    "List of Baroque composers": plain_list_parser,
-    "List of Classical era composers": plain_list_parser,
-    "List of modernist composers": plain_list_parser,
-    "List of medieval composers": table_parser,
-    "List of 20th-century classical composers": table_parser,
-    "List of 21st-century classical composers": table_parser
-}
+def get_parsed_data(links: dict) -> dict:
+    era_pages = {link: {} for link in links}
+    pbar = tqdm(total=len(links))
+    pbar.set_description("Retrieving composer names")
+    for link, parser in links.items():
+        logger.info(f"Retrieving page of link \'{link}\'")
+        era_pages[link]['page'] = wikipedia.WikipediaPage(title=link)
+        logger.info(f"Retrieving bsoup of link \'{link}\'")
+        era_pages[link]['bsoup'] = BeautifulSoup(urlopen(era_pages[link]['page'].url), 'html.parser')
 
-era_pages = {link: {} for link in links}
-pbar = tqdm(total=len(links))
-pbar.set_description("Retrieving composer names")
-for link, parser in links.items():
-    logger.info(f"Retrieving page of link \'{link}\'")
-    era_pages[link]['page'] = wikipedia.WikipediaPage(title=link)
-    logger.info(f"Retrieving bsoup of link \'{link}\'")
-    era_pages[link]['bsoup'] = BeautifulSoup(urlopen(era_pages[link]['page'].url), 'html.parser')
+        logger.info(f"Parsing page of link \'{link}\' using {parser}")
+        era_pages[link]["composers"] = parser(era_pages, link)
 
-    logger.info(f"Parsing page of link \'{link}\' using {parser}")
-    era_pages[link]["composers"] = parser(era_pages, link)
+        logger.info(f"{link} has {len(era_pages[link]['composers'])} composers")
 
-    logger.info(f"{link} has {len(era_pages[link]['composers'])} composers")
+        pbar.update(1)
+    pbar.close()
 
-    pbar.update(1)
-pbar.close()
+    return era_pages
 
 
+if __name__=="__main__":
+    main()
