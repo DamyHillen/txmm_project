@@ -1,9 +1,5 @@
-WashingtonPost.v3
-anserini
-indexes
-info
-results
-topic_rels.txt
+*.pdf
+data
 
 # Created by .ignore support plugin (hsz.mobi)
 ### Python template
