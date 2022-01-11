@@ -20,8 +20,8 @@ logger.propagate = False
 
 def main():
     parser_per_link = {
-        "List of Renaissance composers": plain_list_parser,
-        "List of postmodernist composers": plain_list_parser,
+        # "List of Renaissance composers": plain_list_parser,
+        # "List of postmodernist composers": plain_list_parser,
         "List of Baroque composers": plain_list_parser,
         "List of Classical era composers": plain_list_parser,
         "List of modernist composers": plain_list_parser,
@@ -61,8 +61,10 @@ def load_composer_texts(composers_per_link: dict):
         pbar = tqdm(total=len(composers), desc=f"Loading texts for composers in {link}")
         to_remove = []
         for composer in composers:
+            if "Johann Sebastian" in composer:
+                pass
             try:
-                bsoup = BeautifulSoup(urlopen(wikipedia.WikipediaPage(title=composer).url), 'html.parser')
+                bsoup = BeautifulSoup(urlopen(wikipedia.WikipediaPage(title=composer).url), parser='html.parser')
                 composers_per_link[link][composer] = " ".join([par.text.strip() for par in bsoup.find_all("p")])
             except:
                 to_remove.append(composer)
@@ -105,6 +107,8 @@ def plain_list_parser(era_pages: dict, link: str) -> list:
         hrefs = item.find_all("a")
         if hrefs:
             for elem in hrefs:
+                if composers and composers[-1] == "Johann Sebastian Bach":
+                    input()
                 if elem.contents:
                     name = elem.contents[0]
                     if type(name) is NavigableString:
@@ -113,7 +117,7 @@ def plain_list_parser(era_pages: dict, link: str) -> list:
                             composers.append(name)
 
     # Santa della Pietà exists in two lists. Keep last!
-    for composer in ['William Walton', 'Philip Glass', 'Oscar I of Sweden', 'John IV of Portugal', 'Santa della Pietà']:
+    for composer in ['William Walton', 'Philip Glass', 'Oscar I of Sweden', 'John IV of Portugal' if not "Baroque" in link else 'Santa della Pietà']:
         if composer in composers:
             i = composers.index(composer)
             return composers[:i+1]
@@ -122,14 +126,13 @@ def plain_list_parser(era_pages: dict, link: str) -> list:
 
 def table_parser(era_pages: dict, link: str) -> list:
     tables = [t.find_all('tr') for t in era_pages[link]['bsoup'].find_all('table')]
-    table_rows = tables[np.argmax([len(t) for t in tables])]
-    # table_rows = [t for t in tables if len(t) > 70]
+    # table_rows = tables[np.argmax([len(t) for t in tables])]
+    table_rows = [t for t in tables if len(t) > 70]
 
     composers = []
 
-
-    if len(table_rows) > 150:
-        for row in table_rows:
+    for rows in table_rows:
+        for row in rows:
             cells = row.find_all('a')
 
             if cells and len(row.find_all('td')) > 2:
