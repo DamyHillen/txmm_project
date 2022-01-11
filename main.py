@@ -107,8 +107,6 @@ def plain_list_parser(era_pages: dict, link: str) -> list:
         hrefs = item.find_all("a")
         if hrefs:
             for elem in hrefs:
-                if composers and composers[-1] == "Johann Sebastian Bach":
-                    input()
                 if elem.contents:
                     name = elem.contents[0]
                     if type(name) is NavigableString:
@@ -116,12 +114,13 @@ def plain_list_parser(era_pages: dict, link: str) -> list:
                         if len(name) and '[' not in name:
                             composers.append(name)
 
-    # Santa della Pietà exists in two lists. Keep last!
-    for composer in ['William Walton', 'Philip Glass', 'Oscar I of Sweden', 'John IV of Portugal' if not "Baroque" in link else 'Santa della Pietà']:
-        if composer in composers:
-            i = composers.index(composer)
-            return composers[:i+1]
-    return []
+    composer = {
+        "List of Baroque composers": "Santa della Pietà",
+        "List of Classical era composers": "Oscar I of Sweden",
+        "List of modernist composers": "William Walton",
+    }[link]
+    i = composers.index(composer)
+    return composers[:i+1]
 
 
 def table_parser(era_pages: dict, link: str) -> list:
