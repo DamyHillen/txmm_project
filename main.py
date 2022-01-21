@@ -1,6 +1,8 @@
-from urllib.request import urlopen
-from bs4 import BeautifulSoup
 from bs4.element import NavigableString
+from urllib.request import urlopen
+import matplotlib.pyplot as plt
+from bs4 import BeautifulSoup
+from geotext import GeoText
 from tqdm import tqdm
 import numpy as np
 import wikipedia
@@ -20,8 +22,8 @@ logger.propagate = False
 
 def main():
     parser_per_link = {
-        # "List of Renaissance composers": plain_list_parser,
-        # "List of postmodernist composers": plain_list_parser,
+        "List of Renaissance composers": plain_list_parser,
+        "List of postmodernist composers": plain_list_parser,
         "List of Baroque composers": plain_list_parser,
         "List of Classical era composers": plain_list_parser,
         "List of modernist composers": plain_list_parser,
@@ -31,29 +33,47 @@ def main():
         "List of Romantic composers": table_parser
     }
 
-    composers_per_link = load_composers(parser_per_link)
-    preprocessing(composers_per_link)
+    filtered = get_data("filtered_years")
+    if not filtered:
+        composers_per_link = get_data("scraped_data")
+        if not composers_per_link:
+            composers_per_link = scrape_composers(parser_per_link)
+            store_data(composers_per_link, "scraped_data")
 
+        preprocessing(composers_per_link)
+        filtered = filter_years(composers_per_link)
+        store_data(filtered, "filtered_years")
+
+    scatter_eras(filtered)
     pass
 
 
-def load_composers(parser_per_link: dict):
-    if not os.path.isdir("./data"):
-        os.mkdir("./data")
-    if not os.path.isfile("./data/scraped_data"):
-        logger.info("Scraping data from web...")
-        composers = get_parsed_data(parser_per_link)
-        load_composer_texts(composers)
-        with open("./data/scraped_data", "wb") as file:
-            file.write(msgpack.packb(composers))
-    else:
-        logger.info("Loading existing data...")
-        with open("./data/scraped_data", "rb") as file:
-            composers = msgpack.unpackb(file.read())
-
-    logger.info("Data loaded!")
+def scrape_composers(parser_per_link: dict):
+    composers = get_parsed_data(parser_per_link)
+    load_composer_texts(composers)
 
     return composers
+
+
+def get_data(file_name: str):
+    data = None
+    if not os.path.isdir("./data"):
+        os.mkdir("./data")
+    if os.path.isfile(f"./data/{file_name}"):
+        with open(f"./data/{file_name}", "rb") as file:
+            data = msgpack.unpackb(file.read())
+        logger.info(f"Retrieved data from ./data/{file_name}")
+    else:
+        logger.info(f"Could not retrieve data from ./data/{file_name}")
+
+    return data
+
+
+def store_data(data, file_name: str):
+    if not os.path.isdir("./data"):
+        os.mkdir("./data")
+    with open(f"./data/{file_name}", "wb") as file:
+        file.write(msgpack.packb(data))
 
 
 def load_composer_texts(composers_per_link: dict):
@@ -115,6 +135,8 @@ def plain_list_parser(era_pages: dict, link: str) -> list:
                             composers.append(name)
 
     composer = {
+        "List of Renaissance composers": "Nicholas Dáll Pierce",
+        "List of postmodernist composers": "Philip Glass",
         "List of Baroque composers": "Santa della Pietà",
         "List of Classical era composers": "Oscar I of Sweden",
         "List of modernist composers": "William Walton",
@@ -162,6 +184,44 @@ def sentence_tokenize_text(text: str) -> list:
     text = re.sub(r"\s+", " ", text)         # Replacing all whitespace with a single space
     sentences = re.split(r"[\.!\?] ", text)  # Splitting after . ! or ? followed by a space
     return sentences
+
+
+def filter_years(composers_per_link: dict) -> dict:
+    x = {link: [] for link in composers_per_link}
+
+    for link in x:
+        pbar = tqdm(total=sum([len(composers_per_link[link][composer]["sentences"]) for composer in composers_per_link[link]]), desc=f"Filtering years and locations for {link}")
+        for composer in composers_per_link[link]:
+            for sentence in composers_per_link[link][composer]["sentences"]:
+                years = re.findall("[12][0-9]{3}(( BC| B.C.| BC.){0})", sentence)  # TODO: Fix this damn regex (also: don't forget dates 0-1000)
+                if years:
+                    locations = []
+
+                    for w in range(1, 4):
+                        for i in range(len(sentence.split(" ")) - (w - 1)):
+                            gt = GeoText(" ".join(sentence.split(" ")[i:i+w]))
+                            extracted_locs = gt.cities if gt.cities else gt.countries
+                            for loc in extracted_locs:
+                                if loc not in locations:
+                                    locations.append(loc)
+                    if locations:
+                        x[link].append((years, locations, sentence))
+                pbar.update(1)
+        pbar.close()
+
+    return x
+
+
+def scatter_eras(filtered_data: dict):
+    for i, (link, entries) in enumerate(filtered_data.items()):
+        ys = []
+        for entry in entries:
+            years, locations, sentence = entry
+            ys.extend([int(y) for y in years])
+
+        plt.scatter(ys, i*np.ones(len(ys)), alpha=0.2, label=link)
+    plt.legend()
+    plt.show()
 
 
 if __name__=="__main__":
