@@ -6,6 +6,7 @@ from geotext import GeoText
 from tqdm import tqdm
 import numpy as np
 import wikipedia
+import datetime
 import logging
 import msgpack
 import re
@@ -19,6 +20,17 @@ file_handler.setFormatter(logging.Formatter('%(levelname)s:%(name)s:%(message)s'
 logger.addHandler(file_handler)
 logger.propagate = False
 
+ORDER = [
+    ("Medieval", "List of medieval composers", (500, 1400)),
+    ("Renaissance", "List of Renaissance composers", (1400, 1600)),
+    ("Baroque", "List of Baroque composers", (1600, 1760)),
+    ("Classical", "List of Classical era composers", (1730, 1820)),
+    ("Romantic", "List of Romantic composers", (1815, 1910)),
+    ("Modernist", "List of modernist composers", (1890, 1950)),
+    ("Postmodernist", "List of postmodernist composers", (1930, datetime.datetime.now().year)),
+    ("20th century", "List of 20th-century classical composers", (1901, 2000)),
+    ("21st century", "List of 21st-century classical composers", (2001, datetime.datetime.now().year))
+]
 
 def main():
     parser_per_link = {
@@ -193,7 +205,8 @@ def filter_years(composers_per_link: dict) -> dict:
         pbar = tqdm(total=sum([len(composers_per_link[link][composer]["sentences"]) for composer in composers_per_link[link]]), desc=f"Filtering years and locations for {link}")
         for composer in composers_per_link[link]:
             for sentence in composers_per_link[link][composer]["sentences"]:
-                years = re.findall("[12][0-9]{3}(( BC| B.C.| BC.){0})", sentence)  # TODO: Fix this damn regex (also: don't forget dates 0-1000)
+                years = re.findall("([12]?[0-9]{3})( BC| B.C.| BC.)?", sentence)  # TODO: Fix this damn regex (also: don't forget dates 0-1000)
+                years = [int(y) for y, bc in years if len(bc) == 0 and int(y) <= datetime.datetime.now().year]
                 if years:
                     locations = []
 
@@ -213,14 +226,18 @@ def filter_years(composers_per_link: dict) -> dict:
 
 
 def scatter_eras(filtered_data: dict):
-    for i, (link, entries) in enumerate(filtered_data.items()):
+    for i, (label, link, (lower, upper)) in enumerate(ORDER):
+        entries = filtered_data[link]
         ys = []
         for entry in entries:
             years, locations, sentence = entry
-            ys.extend([int(y) for y in years])
-
-        plt.scatter(ys, i*np.ones(len(ys)), alpha=0.2, label=link)
+            ys.extend([y for y in years])
+        med = np.median(ys)
+        plt.scatter(ys, i*np.ones(len(ys)), alpha=0.02, label=f"{i}: {label}", marker='|')
+        plt.vlines(x=[lower, upper], ymin=i-0.1, ymax=i+0.1, linewidth=2, colors='k')
+        plt.scatter(med, i, color='k', marker='*')
     plt.legend()
+    plt.xlim((750, 2022))
     plt.show()
 
 
