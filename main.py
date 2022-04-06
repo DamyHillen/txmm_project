@@ -1,8 +1,11 @@
 from bs4.element import NavigableString
+from geopy.geocoders import Nominatim
 from urllib.request import urlopen
 import matplotlib.pyplot as plt
 from bs4 import BeautifulSoup
 from geotext import GeoText
+import data_types
+from data_types import *
 from tqdm import tqdm
 import numpy as np
 import wikipedia
@@ -27,10 +30,11 @@ ORDER = [
     ("Classical", "List of Classical era composers", (1730, 1820)),
     ("Romantic", "List of Romantic composers", (1815, 1910)),
     ("Modernist", "List of modernist composers", (1890, 1950)),
-    ("Postmodernist", "List of postmodernist composers", (1930, datetime.datetime.now().year)),
-    ("20th century", "List of 20th-century classical composers", (1901, 2000)),
-    ("21st century", "List of 21st-century classical composers", (2001, datetime.datetime.now().year))
+    ("Postmodernist", "List of postmodernist composers", (1930, datetime.datetime.now().year))
+    # ("20th century", "List of 20th-century classical composers", (1901, 2000)),
+    # ("21st century", "List of 21st-century classical composers", (2001, datetime.datetime.now().year))
 ]
+
 
 def main():
     parser_per_link = {
@@ -45,18 +49,22 @@ def main():
         "List of Romantic composers": table_parser
     }
 
-    filtered = get_data("filtered_years")
+    filtered = get_data(
+        file_name="filtered_years",
+        per_link=lambda a: [data_types.temporospatial_from_json(x) for x in a]
+    )
     if not filtered:
         composers_per_link = get_data("scraped_data")
         if not composers_per_link:
             composers_per_link = scrape_composers(parser_per_link)
             store_data(composers_per_link, "scraped_data")
 
-        preprocessing(composers_per_link)
-        filtered = filter_years(composers_per_link)
-        store_data(filtered, "filtered_years")
+        preprocessed = preprocessing(composers_per_link)
+        filtered = filter_years(preprocessed)
+        store_data(filtered, "filtered_years", per_link=lambda a: [x.to_dict() for x in a])
 
     scatter_eras(filtered)
+    add_locations(filtered)
     pass
 
 
@@ -67,7 +75,7 @@ def scrape_composers(parser_per_link: dict):
     return composers
 
 
-def get_data(file_name: str):
+def get_data(file_name: str, per_link=None):
     data = None
     if not os.path.isdir("./data"):
         os.mkdir("./data")
@@ -78,10 +86,14 @@ def get_data(file_name: str):
     else:
         logger.info(f"Could not retrieve data from ./data/{file_name}")
 
+    if data and per_link:
+        data = {link: per_link(data[link]) for link in data.keys()}
     return data
 
 
-def store_data(data, file_name: str):
+def store_data(data, file_name: str, per_link=None):
+    if per_link:
+        data = {link: per_link(data[link]) for link in data.keys()}
     if not os.path.isdir("./data"):
         os.mkdir("./data")
     with open(f"./data/{file_name}", "wb") as file:
@@ -173,22 +185,23 @@ def table_parser(era_pages: dict, link: str) -> list:
     return composers
 
 
-def preprocessing(composers_per_link: dict):
+def preprocessing(composers_per_link: dict) -> dict:
+    result = {
+        link: [] for link in composers_per_link.keys()
+    }
+
     for link, composers in composers_per_link.items():
         pbar = tqdm(total=len(composers), desc=f"Preprocessing texts of composers in {link}")
 
         for composer in composers:
             text = composers[composer]
-
             sentences = sentence_tokenize_text(text)
-
-            composers[composer] = {
-                "text": text,
-                "sentences": sentences
-            }
+            result[link].append(Composer(composer, link, text, sentences))
 
             pbar.update(1)
         pbar.close()
+
+    return result
 
 
 def sentence_tokenize_text(text: str) -> list:
@@ -202,9 +215,9 @@ def filter_years(composers_per_link: dict) -> dict:
     x = {link: [] for link in composers_per_link}
 
     for link in x:
-        pbar = tqdm(total=sum([len(composers_per_link[link][composer]["sentences"]) for composer in composers_per_link[link]]), desc=f"Filtering years and locations for {link}")
+        pbar = tqdm(total=sum([len(composer.sentences) for composer in composers_per_link[link]]), desc=f"Filtering years and locations for {link}")
         for composer in composers_per_link[link]:
-            for sentence in composers_per_link[link][composer]["sentences"]:
+            for sentence in composer.sentences:
                 years = re.findall("([12]?[0-9]{3})( BC| B.C.| BC.)?", sentence)  # TODO: Fix this damn regex (also: don't forget dates 0-1000)
                 years = [int(y) for y, bc in years if len(bc) == 0 and int(y) <= datetime.datetime.now().year]
                 if years:
@@ -218,7 +231,7 @@ def filter_years(composers_per_link: dict) -> dict:
                                 if loc not in locations:
                                     locations.append(loc)
                     if locations:
-                        x[link].append((years, locations, sentence))
+                        x[link].append(TemporospatialEntry(years, locations, sentence, composer.name))
                 pbar.update(1)
         pbar.close()
 
@@ -229,8 +242,7 @@ def scatter_eras(filtered_data: dict):
     for i, (label, link, (lower, upper)) in enumerate(ORDER):
         entries = filtered_data[link]
         ys = []
-        for entry in entries:
-            years, locations, sentence = entry
+        for years, locations, sentence, composer in entries:
             ys.extend([y for y in years])
         med = np.median(ys)
         plt.scatter(ys, i*np.ones(len(ys)), alpha=0.02, label=f"{i}: {label}", marker='|')
@@ -241,5 +253,14 @@ def scatter_eras(filtered_data: dict):
     plt.show()
 
 
-if __name__=="__main__":
+def add_locations(filtered_data: dict):
+    for link in filtered_data.keys():
+        pbar = tqdm(total=len(filtered_data[link]), desc=f"Setting coordinates for {link}")
+        for entry in filtered_data[link]:
+            entry.set_coords()
+            pbar.update(1)
+        pbar.close()
+
+
+if __name__ == "__main__":
     main()
