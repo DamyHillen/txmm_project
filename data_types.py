@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from geopy import Nominatim
 from typing import *
 
-nominatim = Nominatim(user_agent="GetLoc")
+nominatim = Nominatim(domain="http://localhost/", user_agent="GetLoc")
 
 
 @dataclass
@@ -31,9 +31,13 @@ class TemporospatialEntry:
             "loc_coords": self.loc_coords
         }
 
-    def set_coords(self):
-        locs = [nominatim.geocode(loc) for loc in self.loc_names]
-        self.loc_coords = [(l.latitude, l.longitude) for l in locs]
+    def set_coords(self, loc_mapping: dict):
+        self.loc_coords = []
+        for loc in self.loc_names:
+            if loc not in loc_mapping:
+                l = nominatim.geocode(loc)
+                loc_mapping[loc] = (l.latitude, l.longitude)
+            self.loc_coords.append(loc_mapping[loc])
 
     def __iter__(self):
         yield self.years

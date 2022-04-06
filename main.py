@@ -4,7 +4,6 @@ from urllib.request import urlopen
 import matplotlib.pyplot as plt
 from bs4 import BeautifulSoup
 from geotext import GeoText
-import data_types
 from data_types import *
 from tqdm import tqdm
 import numpy as np
@@ -51,7 +50,7 @@ def main():
 
     filtered = get_data(
         file_name="filtered_years",
-        per_link=lambda a: [data_types.temporospatial_from_json(x) for x in a]
+        per_link=lambda a: [temporospatial_from_json(x) for x in a]
     )
     if not filtered:
         composers_per_link = get_data("scraped_data")
@@ -64,7 +63,12 @@ def main():
         store_data(filtered, "filtered_years", per_link=lambda a: [x.to_dict() for x in a])
 
     scatter_eras(filtered)
+
+    global LOC_MAPPINGS
+    LOC_MAPPINGS = get_data("loc_mappings")
     add_locations(filtered)
+    store_data(LOC_MAPPINGS, "loc_mappings")
+
     pass
 
 
@@ -76,7 +80,7 @@ def scrape_composers(parser_per_link: dict):
 
 
 def get_data(file_name: str, per_link=None):
-    data = None
+    data = {}
     if not os.path.isdir("./data"):
         os.mkdir("./data")
     if os.path.isfile(f"./data/{file_name}"):
@@ -257,7 +261,7 @@ def add_locations(filtered_data: dict):
     for link in filtered_data.keys():
         pbar = tqdm(total=len(filtered_data[link]), desc=f"Setting coordinates for {link}")
         for entry in filtered_data[link]:
-            entry.set_coords()
+            entry.set_coords(LOC_MAPPINGS)
             pbar.update(1)
         pbar.close()
 
