@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from geopy import Nominatim
 from typing import *
 
-nominatim = Nominatim(domain="http://localhost/", user_agent="GetLoc")
+nominatim = Nominatim(user_agent="GetLoc")
 
 
 @dataclass
