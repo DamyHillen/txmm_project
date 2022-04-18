@@ -63,11 +63,7 @@ def main():
         store_data(filtered, "filtered_years", per_link=lambda a: [x.to_dict() for x in a])
 
     scatter_eras(filtered)
-
-    global LOC_MAPPINGS
-    LOC_MAPPINGS = get_data("loc_mappings")
-    add_locations(filtered)
-    store_data(LOC_MAPPINGS, "loc_mappings")
+    # add_countries(filtered)
 
     pass
 
@@ -225,17 +221,15 @@ def filter_years(composers_per_link: dict) -> dict:
                 years = re.findall("([12]?[0-9]{3})( BC| B.C.| BC.)?", sentence)  # TODO: Fix this damn regex (also: don't forget dates 0-1000)
                 years = [int(y) for y, bc in years if len(bc) == 0 and int(y) <= datetime.datetime.now().year]
                 if years:
-                    locations = []
+                    locations = set()
 
                     for w in range(1, 4):
                         for i in range(len(sentence.split(" ")) - (w - 1)):
                             gt = GeoText(" ".join(sentence.split(" ")[i:i+w]))
-                            extracted_locs = gt.cities if gt.cities else gt.countries
-                            for loc in extracted_locs:
-                                if loc not in locations:
-                                    locations.append(loc)
+                            for country, count in gt.country_mentions.items():
+                                locations.add(country)
                     if locations:
-                        x[link].append(TemporospatialEntry(years, locations, sentence, composer.name))
+                        x[link].append(TemporospatialEntry(years, list(locations), sentence, composer.name))
                 pbar.update(1)
         pbar.close()
 
@@ -257,13 +251,13 @@ def scatter_eras(filtered_data: dict):
     plt.show()
 
 
-def add_locations(filtered_data: dict):
-    for link in filtered_data.keys():
-        pbar = tqdm(total=len(filtered_data[link]), desc=f"Setting coordinates for {link}")
-        for entry in filtered_data[link]:
-            entry.set_coords(LOC_MAPPINGS)
-            pbar.update(1)
-        pbar.close()
+# def add_locations(filtered_data: dict):
+#     for link in filtered_data.keys():
+#         pbar = tqdm(total=len(filtered_data[link]), desc=f"Setting coordinates for {link}")
+#         for entry in filtered_data[link]:
+#             entry.set_coords(LOC_MAPPINGS)
+#             pbar.update(1)
+#         pbar.close()
 
 
 if __name__ == "__main__":
