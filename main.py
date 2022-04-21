@@ -1,5 +1,4 @@
 from bs4.element import NavigableString
-from geopy.geocoders import Nominatim
 from urllib.request import urlopen
 import matplotlib.pyplot as plt
 from bs4 import BeautifulSoup
@@ -13,6 +12,10 @@ import logging
 import msgpack
 import re
 import os
+
+# https://gist.github.com/kalinchernev/486393efcca01623b18d
+
+# https://simplemaps.com/data/world-cities
 
 # Setting up the logger
 logger = logging.getLogger(__name__)
@@ -33,6 +36,11 @@ ORDER = [
     # ("20th century", "List of 20th-century classical composers", (1901, 2000)),
     # ("21st century", "List of 21st-century classical composers", (2001, datetime.datetime.now().year))
 ]
+
+
+with open("countries.txt", "r") as file:
+    lines = [line.strip() for line in file.readlines()]
+    COUNTRIES_REGEX = r"(" + "|".join(lines) + ")[ .,\\-!?$]"
 
 
 def main():
@@ -59,7 +67,7 @@ def main():
             store_data(composers_per_link, "scraped_data")
 
         preprocessed = preprocessing(composers_per_link)
-        filtered = filter_years(preprocessed)
+        filtered, countries = filter_years(preprocessed)
         store_data(filtered, "filtered_years", per_link=lambda a: [x.to_dict() for x in a])
 
     scatter_eras(filtered)
@@ -211,7 +219,8 @@ def sentence_tokenize_text(text: str) -> list:
     return sentences
 
 
-def filter_years(composers_per_link: dict) -> dict:
+def filter_years(composers_per_link: dict) -> Tuple[dict, Set[str]]:
+    countries_found = set()
     x = {link: [] for link in composers_per_link}
 
     for link in x:
@@ -223,17 +232,21 @@ def filter_years(composers_per_link: dict) -> dict:
                 if years:
                     locations = set()
 
-                    for w in range(1, 4):
-                        for i in range(len(sentence.split(" ")) - (w - 1)):
-                            gt = GeoText(" ".join(sentence.split(" ")[i:i+w]))
-                            for country, count in gt.country_mentions.items():
-                                locations.add(country)
+                    # for w in range(1, 4):
+                    #     for i in range(len(sentence.split(" ")) - (w - 1)):
+                    #         gt = GeoText(" ".join(sentence.split(" ")[i:i+w]))
+                    #         for country, count in gt.country_mentions.items():
+                    #             if country != "US" or not any([y < 1776 for y in years]):
+                    #                 locations.add(country)
+                    locations = re.findall(COUNTRIES_REGEX, sentence)
+                    for loc in locations:
+                        countries_found.add(loc)
                     if locations:
                         x[link].append(TemporospatialEntry(years, list(locations), sentence, composer.name))
                 pbar.update(1)
         pbar.close()
 
-    return x
+    return x, countries_found
 
 
 def scatter_eras(filtered_data: dict):
