@@ -40,9 +40,6 @@ ORDER = [
 ]
 
 
-
-
-
 def main():
     parser_per_link = {
         "List of Renaissance composers": plain_list_parser,
@@ -79,16 +76,8 @@ def main():
 
     scatter_eras(filtered)
 
-    custom_style = Style(colors=(
-        "#665544",
-    ))
-    worldmap = World(style=custom_style)
-    worldmap.add("Countries", [country_codes[c] for c in countries if c in country_codes], color='black')
+    render_map(filtered, countries, country_codes)
 
-    # Best way to render?
-    worldmap.render_to_file("data/map.svg")
-    worldmap.render_to_png("data/map.png")
-    worldmap.render_in_browser()
 
     pass
 
@@ -271,6 +260,19 @@ def scatter_eras(filtered_data: dict):
     plt.legend()
     plt.xlim((750, 2022))
     plt.show()
+
+
+def render_map(filtered, countries, country_codes):
+    custom_style = Style(colors=(
+        "#665544",
+    ))
+    worldmap = World(style=custom_style)
+    worldmap.add("Countries", [country_codes[c] for c in countries if c in country_codes], color='black')
+
+    # Best way to render?
+    worldmap.render_to_file("data/map.svg")
+    worldmap.render_to_png("data/map.png")
+    worldmap.render_in_browser()
 
 
 if __name__ == "__main__":
