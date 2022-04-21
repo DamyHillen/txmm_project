@@ -10,11 +10,14 @@ class LocationParser:
             self.countries_regex = r"(" + "|".join(lines) + ")[ .,\\-!?$]"
 
         cities_population = {}
+        self.country_codes = {}
         self.cities_lut = {}
         with open("worldcities.csv", "r") as csvfile:
             reader = csv.reader(csvfile, delimiter=",", quotechar="\"")
             headers = reader.__next__()
             for row in reader:
+                if row[4] not in self.country_codes:
+                    self.country_codes[row[4]] = row[5].lower()
                 population = -1 if not row[9] else int(float(row[9]))
 
                 if 0 <= population < 50000:

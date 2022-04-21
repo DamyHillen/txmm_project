@@ -1,10 +1,10 @@
+from LocationParser import LocationParser
 from bs4.element import NavigableString
+from pygal_maps_world.maps import World, BaseMap
 from urllib.request import urlopen
 import matplotlib.pyplot as plt
+from pygal.style import Style
 from bs4 import BeautifulSoup
-from geotext import GeoText
-
-from LocationParser import LocationParser
 from data_types import *
 from tqdm import tqdm
 import numpy as np
@@ -60,9 +60,12 @@ def main():
         file_name="filtered_years",
         per_link=lambda a: [temporospatial_from_json(x) for x in a]
     )
-    countries = get_data(
+    country_data = get_data(
         file_name="countries_found"
     )
+    if country_data:
+        countries, country_codes = country_data
+
     if not filtered:
         composers_per_link = get_data("scraped_data")
         if not composers_per_link:
@@ -70,11 +73,22 @@ def main():
             store_data(composers_per_link, "scraped_data")
 
         preprocessed = preprocessing(composers_per_link)
-        filtered, countries = filter_years(preprocessed)
+        filtered, countries, country_codes = filter_years(preprocessed)
         store_data(filtered, "filtered_years", per_link=lambda a: [x.to_dict() for x in a])
-        store_data(countries, "countries_found")
+        store_data([countries, country_codes], "countries_found")
 
     scatter_eras(filtered)
+
+    custom_style = Style(colors=(
+        "#665544",
+    ))
+    worldmap = World(style=custom_style)
+    worldmap.add("Countries", [country_codes[c] for c in countries if c in country_codes], color='black')
+
+    # Best way to render?
+    worldmap.render_to_file("data/map.svg")
+    worldmap.render_to_png("data/map.png")
+    worldmap.render_in_browser()
 
     pass
 
@@ -222,7 +236,7 @@ def sentence_tokenize_text(text: str) -> list:
     return sentences
 
 
-def filter_years(composers_per_link: dict) -> Tuple[dict, List[str]]:
+def filter_years(composers_per_link: dict) -> Tuple[dict, List[str], dict]:
     loc_parser = LocationParser()
 
     countries_found = set()
@@ -241,7 +255,7 @@ def filter_years(composers_per_link: dict) -> Tuple[dict, List[str]]:
                 pbar.update(1)
         pbar.close()
 
-    return x, list(loc_parser.countries_found)
+    return x, list(loc_parser.countries_found), loc_parser.country_codes
 
 
 def scatter_eras(filtered_data: dict):
