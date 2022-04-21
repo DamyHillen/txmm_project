@@ -3,6 +3,8 @@ from urllib.request import urlopen
 import matplotlib.pyplot as plt
 from bs4 import BeautifulSoup
 from geotext import GeoText
+
+from LocationParser import LocationParser
 from data_types import *
 from tqdm import tqdm
 import numpy as np
@@ -38,9 +40,7 @@ ORDER = [
 ]
 
 
-with open("countries.txt", "r") as file:
-    lines = [line.strip() for line in file.readlines()]
-    COUNTRIES_REGEX = r"(" + "|".join(lines) + ")[ .,\\-!?$]"
+
 
 
 def main():
@@ -60,6 +60,9 @@ def main():
         file_name="filtered_years",
         per_link=lambda a: [temporospatial_from_json(x) for x in a]
     )
+    countries = get_data(
+        file_name="countries_found"
+    )
     if not filtered:
         composers_per_link = get_data("scraped_data")
         if not composers_per_link:
@@ -69,9 +72,9 @@ def main():
         preprocessed = preprocessing(composers_per_link)
         filtered, countries = filter_years(preprocessed)
         store_data(filtered, "filtered_years", per_link=lambda a: [x.to_dict() for x in a])
+        store_data(countries, "countries_found")
 
     scatter_eras(filtered)
-    # add_countries(filtered)
 
     pass
 
@@ -219,7 +222,9 @@ def sentence_tokenize_text(text: str) -> list:
     return sentences
 
 
-def filter_years(composers_per_link: dict) -> Tuple[dict, Set[str]]:
+def filter_years(composers_per_link: dict) -> Tuple[dict, List[str]]:
+    loc_parser = LocationParser()
+
     countries_found = set()
     x = {link: [] for link in composers_per_link}
 
@@ -230,23 +235,13 @@ def filter_years(composers_per_link: dict) -> Tuple[dict, Set[str]]:
                 years = re.findall("([12]?[0-9]{3})( BC| B.C.| BC.)?", sentence)  # TODO: Fix this damn regex (also: don't forget dates 0-1000)
                 years = [int(y) for y, bc in years if len(bc) == 0 and int(y) <= datetime.datetime.now().year]
                 if years:
-                    locations = set()
-
-                    # for w in range(1, 4):
-                    #     for i in range(len(sentence.split(" ")) - (w - 1)):
-                    #         gt = GeoText(" ".join(sentence.split(" ")[i:i+w]))
-                    #         for country, count in gt.country_mentions.items():
-                    #             if country != "US" or not any([y < 1776 for y in years]):
-                    #                 locations.add(country)
-                    locations = re.findall(COUNTRIES_REGEX, sentence)
-                    for loc in locations:
-                        countries_found.add(loc)
+                    locations = loc_parser.get_countries(sentence)
                     if locations:
                         x[link].append(TemporospatialEntry(years, list(locations), sentence, composer.name))
                 pbar.update(1)
         pbar.close()
 
-    return x, countries_found
+    return x, list(loc_parser.countries_found)
 
 
 def scatter_eras(filtered_data: dict):
@@ -262,15 +257,6 @@ def scatter_eras(filtered_data: dict):
     plt.legend()
     plt.xlim((750, 2022))
     plt.show()
-
-
-# def add_locations(filtered_data: dict):
-#     for link in filtered_data.keys():
-#         pbar = tqdm(total=len(filtered_data[link]), desc=f"Setting coordinates for {link}")
-#         for entry in filtered_data[link]:
-#             entry.set_coords(LOC_MAPPINGS)
-#             pbar.update(1)
-#         pbar.close()
 
 
 if __name__ == "__main__":
