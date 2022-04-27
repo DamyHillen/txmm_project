@@ -29,17 +29,8 @@ class TemporospatialEntry:
             # "loc_names": self.loc_names,
             "countries": self.countries,
             "text": self.text,
-            "composer": self.composer#,
-            # "loc_coords": self.loc_coords
+            "composer": self.composer,
         }
-
-    # def set_coords(self, loc_mapping: dict):
-    #     self.loc_coords = []
-    #     for loc in self.loc_names:
-    #         if loc not in loc_mapping:
-    #             l = nominatim.geocode(loc)
-    #             loc_mapping[loc] = (l.latitude, l.longitude)
-    #         self.loc_coords.append(loc_mapping[loc])
 
     def __iter__(self):
         yield self.years

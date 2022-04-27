@@ -1,18 +1,29 @@
 from typing import *
+import logging
 import csv
 import re
+
+# Setting up the logger
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+file_handler = logging.FileHandler('logs/location_parser.log')
+file_handler.setFormatter(logging.Formatter('%(levelname)s:%(name)s:%(message)s'))
+logger.addHandler(file_handler)
+logger.propagate = False
 
 
 class LocationParser:
     def __init__(self):
-        with open("countries.txt", "r") as file:
+        with open("resources/countries.txt", "r") as file:
             lines = [line.strip() for line in file.readlines()]
             self.countries_regex = r"(" + "|".join(lines) + ")[ .,\\-!?$]"
+            logger.info(f"Loaded ./resources/countries.txt! Contains {len(lines)} countries.")
 
         cities_population = {}
         self.country_codes = {}
         self.cities_lut = {}
-        with open("worldcities.csv", "r") as csvfile:
+
+        with open("./resources/worldcities.csv", "r") as csvfile:
             reader = csv.reader(csvfile, delimiter=",", quotechar="\"")
             headers = reader.__next__()
             for row in reader:
@@ -21,6 +32,7 @@ class LocationParser:
                 population = -1 if not row[9] else int(float(row[9]))
 
                 if 0 <= population < 50000:
+                    logger.info(f"Population of town < 50000! Leaving out \'{row}\'")
                     continue
 
                 if not row[0] in self.cities_lut or\
@@ -31,6 +43,8 @@ class LocationParser:
 
         del cities_population
         self.countries_found = set()
+
+        logger.info(f"Created lookup table! Contains {len(self.cities_lut)} entries.")
 
     def get_countries(self, sentence: str) -> List[str]:
         found = set()
