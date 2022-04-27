@@ -1,8 +1,10 @@
 from LocationParser import LocationParser
 from data_types import *
 from tqdm import tqdm
+import numpy as np
 import datetime
 import logging
+import copy
 import re
 
 # Setting up the logger
@@ -65,3 +67,27 @@ class Processor:
             pbar.close()
 
         return x, list(loc_parser.countries_found), loc_parser.country_codes
+
+    @staticmethod
+    def filter_outliers(temporospatial_data: dict) -> dict:  # TODO: Make it work
+        x = copy.deepcopy(temporospatial_data)
+        years: Dict[str, Dict[str, Any]] = {}
+
+        for era, entries in x.items():
+            years[era] = {"years": []}
+            for entry in entries:
+                years[era]["years"].extend(entry.years)
+            years[era]["mean"] = np.mean(years[era]["years"])
+            years[era]["median"] = np.median(years[era]["years"])
+            years[era]["std"] = np.std(years[era]["years"])
+            del years[era]["years"]
+
+            for entry in entries:
+                for year in entry.years:
+                    if abs(year - years[era]["median"]) > 0.125 * years[era]["std"]:
+                        while year in entry.years:
+                            entry.years.remove(year)
+                if len(entry.years) == 0:
+                    entries.remove(entry)
+
+        return x

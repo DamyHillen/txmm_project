@@ -20,7 +20,7 @@ logger.propagate = False
 
 
 class DataCollector:
-    def __init__(self):
+    def __init__(self, processor):
         self.parser_per_link = {
             "List of Renaissance composers": self.plain_list_parser,
             "List of postmodernist composers": self.plain_list_parser,
@@ -33,7 +33,7 @@ class DataCollector:
             "List of Romantic composers": self.table_parser
         }
 
-        self.processor = Processor()
+        self.processor = processor if processor else Processor()
 
     def get_temporospatial(self) -> Tuple[dict, List[str], dict]:
         temporospatial_data = get_data(
