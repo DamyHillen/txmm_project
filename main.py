@@ -35,7 +35,7 @@ def main():
     visualization.scatter_eras(filtered, ORDER)
     visualization.render_map(filtered, countries, country_codes)
 
-    pass
+    pass  # For a debugging breakpoint
 
 
 if __name__ == "__main__":
