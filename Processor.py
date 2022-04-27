@@ -69,7 +69,7 @@ class Processor:
         return x, list(loc_parser.countries_found), loc_parser.country_codes
 
     @staticmethod
-    def filter_outliers(temporospatial_data: dict) -> dict:  # TODO: Make it work
+    def filter_outliers(temporospatial_data: dict, order: list) -> dict:  # TODO: Make it work using the order list
         x = copy.deepcopy(temporospatial_data)
         years: Dict[str, Dict[str, Any]] = {}
 

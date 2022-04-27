@@ -40,4 +40,4 @@ def render_map(filtered, countries, country_codes):
     # Best way to render?
     worldmap.render_to_file("data/maps/map.svg")
     worldmap.render_to_png("data/maps/map.png")
-    worldmap.render_in_browser()
+    # worldmap.render_in_browser()

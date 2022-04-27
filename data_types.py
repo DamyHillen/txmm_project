@@ -21,8 +21,6 @@ class TemporospatialEntry:
     text: str
     composer: str
 
-    # loc_coords: List[Tuple[float, float]] = None
-
     def to_dict(self):
         return {
             "years": self.years,

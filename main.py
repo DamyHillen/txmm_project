@@ -30,7 +30,7 @@ def main():
     data_collector = DataCollector(processor=processor)
 
     temporospatial_data, countries, country_codes = data_collector.get_temporospatial()
-    filtered = processor.filter_outliers(temporospatial_data)
+    filtered = processor.filter_outliers(temporospatial_data, ORDER)
 
     visualization.scatter_eras(filtered, ORDER)
     visualization.render_map(filtered, countries, country_codes)
