@@ -73,25 +73,26 @@ class Processor:
         return x, list(loc_parser.countries_found), loc_parser.country_codes
 
     @staticmethod
-    def filter_outliers(temporospatial_data: dict, order: list) -> dict:  # TODO: Make it work using the order list
+    def filter_outliers(temporospatial_data: dict, order: list) -> dict:
         x = copy.deepcopy(temporospatial_data)
-        years: Dict[str, Dict[str, Any]] = {}
 
-        for era, entries in x.items():
-            years[era] = {"years": []}
-            for entry in entries:
-                years[era]["years"].extend(entry.years)
-            years[era]["mean"] = np.mean(years[era]["years"])
-            years[era]["median"] = np.median(years[era]["years"])
-            years[era]["std"] = np.std(years[era]["years"])
-            del years[era]["years"]
+        for _, era, (start, end) in order:
+            entries: List[TemporospatialEntry] = x[era]
 
-            for entry in entries:
+            # Get new start and end year, adding some buffer to the boundaries
+            buffer = (end - start)/4
+            start -= buffer
+            end += buffer
+
+            to_remove: List[int] = []
+            for i, entry in enumerate(entries):
                 for year in entry.years:
-                    if abs(year - years[era]["median"]) > 0.125 * years[era]["std"]:
-                        while year in entry.years:
-                            entry.years.remove(year)
+                    if not start <= year <= end:
+                        entry.years.remove(year)
                 if len(entry.years) == 0:
-                    entries.remove(entry)
+                    to_remove.append(i)
+
+            for idx in reversed(to_remove):
+                entries.pop(idx)
 
         return x
