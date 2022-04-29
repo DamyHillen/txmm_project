@@ -39,6 +39,8 @@ def scatter_eras(filtered_data: dict, order: list):
         if not lh._label == "Data median":
             lh.set(alpha=1, linewidth=5)  # Make legend icons properly visible
     plt.xlim((start, end))
+    plt.xlabel("Year")
+    plt.ylabel("Era number")
     plt.show()
 
 
@@ -68,7 +70,8 @@ def render_maps(filtered_data: dict, countries: list, country_codes: dict, order
                         d[year] = 0
                     d[year] += 1
 
-        # Filter out countries without entries:
+    if not os.path.isdir("./data/maps"):
+        os.mkdir("./data/maps")
 
     last_era: dict = {}
 
@@ -89,8 +92,13 @@ def render_maps(filtered_data: dict, countries: list, country_codes: dict, order
             codes_per_era = {
                 era: [] for era in era_names
             }
+            latest_era = 0
             for code, era in last_era.items():
+                latest_era = max(latest_era, era)
                 codes_per_era[era_names[era]].append(code)
+
+            for i in range(latest_era-2):
+                codes_per_era[era_names[i]] = []
 
             for era in era_names:
                 worldmap.add(era, codes_per_era[era])
