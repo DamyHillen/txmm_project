@@ -88,7 +88,7 @@ def render_maps(filtered_data: dict, countries: list, country_codes: dict, order
                         else:
                             last_era[code] = max(last_era[code], i)
 
-        if last_era:                # TODO: Remove countries from map if last era is 2 or more eras ago
+        if last_era:
             codes_per_era = {
                 era: [] for era in era_names
             }
