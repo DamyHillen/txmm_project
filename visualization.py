@@ -19,24 +19,27 @@ logger.propagate = False
 
 def scatter_eras(filtered_data: dict, order: list):
     logger.info(f"Scattering the data using order {order}")
-    for i, (label, link, (lower, upper)) in enumerate(order):
+    for i, (label, link, (lower, upper), color) in enumerate(order):
         entries = filtered_data[link]
         ys = []
         for years, locations, sentence, composer in entries:
             ys.extend([y for y in years])
         med = np.median(ys)
-        plt.scatter(ys, i*np.ones(len(ys)), alpha=0.02, label=f"{i}: {label}", marker='|')
+        plt.scatter(ys, i*np.ones(len(ys)), alpha=(upper - lower)/5000, color=color, label=f"{i}: {label}", marker='|')
         plt.vlines(x=[lower, upper], ymin=i-0.1, ymax=i+0.1, linewidth=2, colors='k')
-        plt.scatter(med, i, color='k', marker='*')
-    plt.legend()
-    plt.xlim((750, 2022))
+        plt.scatter(med, i, color='k', marker='*', label="Data median" if i == 6 else None)
+    leg = plt.legend()
+    for lh in leg.legendHandles:
+        if not lh._label == "Data median":
+            lh.set(alpha=1, linewidth=5)
+    plt.xlim((500, 2022))
     plt.show()
 
 
 def render_map(filtered, countries, country_codes):
     logger.info("Rendering map(s)!")
     custom_style = Style(colors=(
-        "#665544",
+        "#555555",
     ))
     worldmap = World(style=custom_style)
     worldmap.add("Countries", [country_codes[c] for c in countries if c in country_codes], color='black')

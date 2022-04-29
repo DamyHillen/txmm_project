@@ -22,7 +22,7 @@ logger.propagate = False
 
 class Processor:
     def preprocess(self, composers_per_link: dict) -> dict:
-        result = {
+        result: Dict[str, List[Composer]] = {
             link: [] for link in composers_per_link.keys()
         }
 
@@ -51,8 +51,7 @@ class Processor:
     def filter_temporospatial(composers_per_link: dict) -> Tuple[dict, List[str], dict]:
         loc_parser = LocationParser()
 
-        countries_found = set()
-        x = {link: [] for link in composers_per_link}
+        x: Dict[str, List[TemporospatialEntry]] = {link: [] for link in composers_per_link}
 
         for link in x:
             pbar = tqdm(total=sum([len(composer.sentences) for composer in composers_per_link[link]]),
@@ -60,8 +59,7 @@ class Processor:
             logger.info(f"Filtering years and locations for \'{link}\'")
             for composer in composers_per_link[link]:
                 for sentence in composer.sentences:
-                    years = re.findall("([12]?[0-9]{3})( BC| B.C.| BC.)?",
-                                       sentence)  # TODO: Fix this damn regex (also: don't forget dates 0-1000)
+                    years = re.findall("([12]?[0-9]{3})( BC| B.C.| BC.)?", sentence)
                     years = [int(y) for y, bc in years if len(bc) == 0 and int(y) <= datetime.datetime.now().year]
                     if years:
                         locations = loc_parser.get_countries(sentence)
@@ -76,20 +74,18 @@ class Processor:
     def filter_outliers(temporospatial_data: dict, order: list) -> dict:
         x = copy.deepcopy(temporospatial_data)
 
-        for _, era, (start, end) in order:
+        for _, era, (start, end), _ in order:
             entries: List[TemporospatialEntry] = x[era]
 
             # Get new start and end year, adding some buffer to the boundaries
-            buffer = (end - start)/4
+            buffer = int((end - start)/4)
             start -= buffer
             end += buffer
 
+            # Filter years too far outside predefined time period
             to_remove: List[int] = []
             for i, entry in enumerate(entries):
-                for year in entry.years:
-                    if not start <= year <= end:
-                        entry.years.remove(year)
-                if len(entry.years) == 0:
+                if entry.filter_years(start, end) == 0:
                     to_remove.append(i)
 
             for idx in reversed(to_remove):

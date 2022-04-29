@@ -36,6 +36,18 @@ class TemporospatialEntry:
         yield self.text
         yield self.composer
 
+    def filter_years(self, start: int, end: int) -> int:
+        to_remove: List[int] = []
+
+        for i, year in enumerate(self.years):
+            if not (start <= year <= end):
+                to_remove.append(i)
+
+        for i in reversed(to_remove):
+            self.years.pop(i)
+
+        return len(self.years)
+
 
 def temporospatial_from_json(json: dict) -> TemporospatialEntry:
     return TemporospatialEntry(**json)

@@ -17,13 +17,13 @@ logger.addHandler(file_handler)
 logger.propagate = False
 
 ORDER = [
-    ("Medieval", "List of medieval composers", (500, 1400)),
-    ("Renaissance", "List of Renaissance composers", (1400, 1600)),
-    ("Baroque", "List of Baroque composers", (1600, 1760)),
-    ("Classical", "List of Classical era composers", (1730, 1820)),
-    ("Romantic", "List of Romantic composers", (1815, 1910)),
-    ("Modernist", "List of modernist composers", (1890, 1950)),
-    ("Postmodernist", "List of postmodernist composers", (1930, datetime.datetime.now().year)),
+    ("Medieval", "List of medieval composers", (500, 1400), 'tab:blue'),
+    ("Renaissance", "List of Renaissance composers", (1400, 1600), 'tab:orange'),
+    ("Baroque", "List of Baroque composers", (1600, 1760), 'tab:green'),
+    ("Classical", "List of Classical era composers", (1730, 1820), 'tab:red'),
+    ("Romantic", "List of Romantic composers", (1815, 1910), 'tab:purple'),
+    ("Modernist", "List of modernist composers", (1890, 1950), 'tab:brown'),
+    ("Postmodernist", "List of postmodernist composers", (1930, datetime.datetime.now().year), 'tab:pink'),
     # ("20th century", "List of 20th-century classical composers", (1901, 2000)),
     # ("21st century", "List of 21st-century classical composers", (2001, datetime.datetime.now().year))
 ]
@@ -33,10 +33,14 @@ def main():
     processor = Processor()
     data_collector = DataCollector(processor=processor)
 
+    logger.info("Retrieving temporospatial data")
     temporospatial_data, countries, country_codes = data_collector.get_temporospatial()
+    logger.info("Filtering outliers")
     filtered = processor.filter_outliers(temporospatial_data, ORDER)
 
+    logger.info("visualization.scatter_eras()")
     visualization.scatter_eras(filtered, ORDER)
+    logger.info("visualization.render_map()")
     visualization.render_map(filtered, countries, country_codes)
 
     pass  # For a debugging breakpoint
