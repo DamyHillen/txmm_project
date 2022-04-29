@@ -97,7 +97,7 @@ def render_maps(filtered_data: dict, countries: list, country_codes: dict, order
                 latest_era = max(latest_era, era)
                 codes_per_era[era_names[era]].append(code)
 
-            for i in range(latest_era-2):
+            for i in range(latest_era-1):
                 codes_per_era[era_names[i]] = []
 
             for era in era_names:
