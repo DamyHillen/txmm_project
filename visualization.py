@@ -3,6 +3,10 @@ import matplotlib.pyplot as plt
 from pygal.style import Style
 import numpy as np
 import logging
+import os
+
+if os.path.isfile("./logs/visualization.log"):
+    os.remove("./logs/visualization.log")
 
 # Setting up the logger
 logger = logging.getLogger(__name__)

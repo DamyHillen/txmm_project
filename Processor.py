@@ -6,6 +6,10 @@ import datetime
 import logging
 import copy
 import re
+import os
+
+if os.path.isfile("./logs/processor.log"):
+    os.remove("./logs/processor.log")
 
 # Setting up the logger
 logger = logging.getLogger(__name__)

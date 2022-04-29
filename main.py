@@ -3,6 +3,10 @@ from Processor import Processor
 import visualization
 import datetime
 import logging
+import os
+
+if os.path.isfile("./logs/main.log"):
+    os.remove("./logs/main.log")
 
 # Setting up the logger
 logger = logging.getLogger(__name__)

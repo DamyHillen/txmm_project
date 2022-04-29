@@ -2,6 +2,10 @@ from typing import *
 import logging
 import csv
 import re
+import os
+
+if os.path.isfile("./logs/location_parser.log"):
+    os.remove("./logs/location_parser.log")
 
 # Setting up the logger
 logger = logging.getLogger(__name__)

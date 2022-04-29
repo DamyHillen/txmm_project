@@ -10,6 +10,9 @@ import logging
 import msgpack
 import os
 
+if os.path.isfile("./logs/data_collection.log"):
+    os.remove("./logs/data_collection.log")
+
 # Setting up the logger
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
