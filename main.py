@@ -24,8 +24,8 @@ ORDER = [
     ("Romantic", "List of Romantic composers", (1815, 1910), 'tab:purple'),
     ("Modernist", "List of modernist composers", (1890, 1950), 'tab:brown'),
     ("Postmodernist", "List of postmodernist composers", (1930, datetime.datetime.now().year), 'tab:pink'),
-    # ("20th century", "List of 20th-century classical composers", (1901, 2000)),
-    # ("21st century", "List of 21st-century classical composers", (2001, datetime.datetime.now().year))
+    # ("20th century", "List of 20th-century classical composers", (1901, 2000), 'black'),
+    # ("21st century", "List of 21st-century classical composers", (2001, datetime.datetime.now().year), 'cyan')
 ]
 
 
@@ -41,7 +41,7 @@ def main():
     logger.info("visualization.scatter_eras()")
     visualization.scatter_eras(filtered, ORDER)
     logger.info("visualization.render_map()")
-    visualization.render_map(filtered, countries, country_codes)
+    visualization.render_maps(filtered, countries, country_codes, ORDER)
 
     pass  # For a debugging breakpoint
 

@@ -1,6 +1,9 @@
 from pygal_maps_world.maps import World
 import matplotlib.pyplot as plt
+from matplotlib import colors
 from pygal.style import Style
+from data_types import *
+from tqdm import tqdm
 import numpy as np
 import logging
 import os
@@ -19,6 +22,9 @@ logger.propagate = False
 
 def scatter_eras(filtered_data: dict, order: list):
     logger.info(f"Scattering the data using order {order}")
+    start = order[0][2][0]
+    end = order[-1][2][1]
+
     for i, (label, link, (lower, upper), color) in enumerate(order):
         entries = filtered_data[link]
         ys = []
@@ -31,20 +37,63 @@ def scatter_eras(filtered_data: dict, order: list):
     leg = plt.legend()
     for lh in leg.legendHandles:
         if not lh._label == "Data median":
-            lh.set(alpha=1, linewidth=5)
-    plt.xlim((500, 2022))
+            lh.set(alpha=1, linewidth=5)  # Make legend icons properly visible
+    plt.xlim((start, end))
     plt.show()
 
 
-def render_map(filtered, countries, country_codes):
-    logger.info("Rendering map(s)!")
-    custom_style = Style(colors=(
-        "#555555",
-    ))
-    worldmap = World(style=custom_style)
-    worldmap.add("Countries", [country_codes[c] for c in countries if c in country_codes], color='black')
+def render_maps(filtered_data: dict, countries: list, country_codes: dict, order: list):
+    logger.info("Rendering maps!")
+    custom_style = Style(colors=tuple(colors.colorConverter.colors[c] for _, _, _, c in order))  # plt colors to hex
+    start = order[0][2][0]
+    end = order[-1][2][1]
+    era_names = [e[0] for e in order]
 
-    # Best way to render?
-    worldmap.render_to_file("data/maps/map.svg")
-    worldmap.render_to_png("data/maps/map.png")
-    # worldmap.render_in_browser()
+    era_per_year_per_country = {}
+
+    for name, link, (lower, upper), color in order:
+        entries: List[TemporospatialEntry] = filtered_data[link]
+
+        for entry in entries:
+            years, countries, _, _ = entry
+
+            for country in countries:
+                if country not in era_per_year_per_country:
+                    era_per_year_per_country[country] = {
+                        name: {} for name in era_names
+                    }
+                d = era_per_year_per_country[country][name]
+                for year in years:
+                    if year not in d:
+                        d[year] = 0
+                    d[year] += 1
+
+        # Filter out countries without entries:
+
+    last_era: dict = {}
+
+    pbar = tqdm(total=end-start, desc=f"Creating maps for {end-start} years")
+    for year in range(start, end+1):
+        worldmap = World(style=custom_style)
+        for i, era in enumerate(era_names):
+            for country in era_per_year_per_country.keys():
+                if year in era_per_year_per_country[country][era]:
+                    if country in country_codes:
+                        code = country_codes[country]
+                        if code not in last_era:
+                            last_era[code] = i
+                        else:
+                            last_era[code] = max(last_era[code], i)
+
+        if last_era:                # TODO: Remove countries from map if last era is 2 or more eras ago
+            codes_per_era = {
+                era: [] for era in era_names
+            }
+            for code, era in last_era.items():
+                codes_per_era[era_names[era]].append(code)
+
+            for era in era_names:
+                worldmap.add(era, codes_per_era[era])
+            worldmap.render_to_png(f"data/maps/map_{year}.png")
+        pbar.update(1)
+    pbar.close()
