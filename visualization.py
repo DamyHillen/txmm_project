@@ -78,6 +78,7 @@ def render_maps(filtered_data: dict, countries: list, country_codes: dict, order
     pbar = tqdm(total=end-start, desc=f"Creating maps for {end-start} years")
     for year in range(start, end+1):
         worldmap = World(style=custom_style)
+        worldmap.title = f"Musical eras in {year}"
         for i, era in enumerate(era_names):
             for country in era_per_year_per_country.keys():
                 if year in era_per_year_per_country[country][era]:
