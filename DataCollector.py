@@ -66,7 +66,7 @@ class DataCollector:
 
         return temporospatial_data, countries, country_codes
 
-    def scrape_composers(self):
+    def scrape_composers(self) -> dict:
         composers = self.get_parsed_data()
         self.load_composer_texts(composers)
 
