@@ -44,7 +44,7 @@ def scatter_eras(filtered_data: dict, order: list):
     plt.show()
 
 
-def render_maps(filtered_data: dict, countries: list, country_codes: dict, order: list):
+def render_maps(filtered_data: dict, country_codes: dict, order: list):
     logger.info("Rendering maps!")
     custom_style = Style(colors=tuple(colors.colorConverter.colors[c] for _, _, _, c in order))  # plt colors to hex
     start = order[0][2][0]

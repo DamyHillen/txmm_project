@@ -41,7 +41,7 @@ def main():
     logger.info("visualization.scatter_eras()")
     visualization.scatter_eras(filtered, ORDER)
     logger.info("visualization.render_map()")
-    visualization.render_maps(filtered, countries, country_codes, ORDER)
+    visualization.render_maps(filtered, country_codes, ORDER)
 
     pass  # For a debugging breakpoint
 
