@@ -1,6 +1,6 @@
 from bs4.element import NavigableString
-from Processor import Processor
 from urllib.request import urlopen
+from Processor import Processor
 from bs4 import BeautifulSoup
 from data_types import *
 from tqdm import tqdm
