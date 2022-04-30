@@ -45,6 +45,10 @@ def scatter_eras(filtered_data: dict, order: list):
 
 
 def render_maps(filtered_data: dict, country_codes: dict, order: list):
+    if os.path.isdir("./data/maps") and os.listdir("./data/maps"):
+        logger.info("./data/maps/ already contains files. Rendering of maps is skipped!")
+        return
+
     logger.info("Rendering maps!")
     custom_style = Style(colors=tuple(colors.colorConverter.colors[c] for _, _, _, c in order))  # plt colors to hex
     start = order[0][2][0]
@@ -78,7 +82,7 @@ def render_maps(filtered_data: dict, country_codes: dict, order: list):
     pbar = tqdm(total=end-start, desc=f"Creating maps for {end-start} years")
     for year in range(start, end+1):
         worldmap = World(style=custom_style)
-        worldmap.title = f"Musical eras in {year}"
+        worldmap.title = f"Western Classical Musical Eras per Country in {year}"
         for i, era in enumerate(era_names):
             for country in era_per_year_per_country.keys():
                 if year in era_per_year_per_country[country][era]:
