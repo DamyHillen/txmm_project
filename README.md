@@ -1,3 +1,4 @@
 # Analyzing The Temporospatial Development of Western Classical Music through Wikipedia Articles
 
-![Map Animation](map_animation.gif)
+![Global data scatter](figures/global_scatter.png)
+![Map Animation](figures/map_animation.gif)
